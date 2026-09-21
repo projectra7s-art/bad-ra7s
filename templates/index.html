@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RE-SIZER</title>
+
+  <!-- night / day mode is applied before the page is drawn (no flash) -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("resizer.theme");
+        var dark = saved ? saved === "dark"
+          : window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin="">
+
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Libraries (loaded before the app modules) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+
+<body id="home">
+
+<!-- Icon sprite (used with <use href="#i-...">) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+    </symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/>
+      <path d="M9.6 4.6A2 2 0 1 1 11 8H2"/>
+      <path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>
+    </symbol>
+    <symbol id="i-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="7" width="16" height="10" rx="2"/>
+      <path d="M22 11v2M6 11v2M10 11v2M14 11v2"/>
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+    </symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="6" width="12" height="12" rx="2"/>
+      <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>
+    </symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m12 3 9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+    </symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+    </symbol>
+    <symbol id="i-thermo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+    </symbol>
+    <symbol id="i-mountain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 32 32">
+      <path d="M6 26C6 12 14 5 28 4c0 14-6 22-18 22" fill="#22c55e"/>
+      <path d="M6 26c5-7 10-11 17-15" fill="none" stroke="#0b2239" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="turbine" viewBox="-40 -70 80 200">
+      <path d="M-1.6 0 L-3.2 128 L3.2 128 L1.6 0Z" fill="#e8f1f5"/>
+      <g fill="#f4f9fb">
+        <path d="M0 0 L-3 -5 L0 -64 L3 -5Z"/>
+        <path d="M0 0 L-3 -5 L0 -64 L3 -5Z" transform="rotate(120)"/>
+        <path d="M0 0 L-3 -5 L0 -64 L3 -5Z" transform="rotate(240)"/>
+      </g>
+      <circle r="4.2" fill="#f4f9fb"/>
+    </symbol>
+  </defs>
+</svg>
+
+
+<!-- ===================================================== -->
+<!-- HERO (top bar + title + feature chips)                -->
+<!-- ===================================================== -->
+<div class="hero-wrap">
+
+  <svg class="hero-art" viewBox="0 0 900 460" preserveAspectRatio="xMaxYMax slice" aria-hidden="true">
+    <defs>
+      <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#ffb347" stop-opacity="0.95"/>
+        <stop offset="0.35" stop-color="#ff8a3d" stop-opacity="0.45"/>
+        <stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="panelGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3f79c9"/>
+        <stop offset="1" stop-color="#16345f"/>
+      </linearGradient>
+      <pattern id="panelGrid" width="12" height="9" patternUnits="userSpaceOnUse">
+        <path d="M12 0H0V9" fill="none" stroke="#a9c7f0" stroke-opacity="0.55" stroke-width="0.8"/>
+      </pattern>
+    </defs>
+    <circle cx="640" cy="250" r="230" fill="url(#sunGlow)"/>
+    <path d="M0 330 L120 250 L210 300 L330 200 L450 290 L560 230 L700 310 L820 240 L900 290 L900 460 L0 460Z" fill="#12395a" opacity="0.85"/>
+    <path d="M0 380 L140 320 L260 360 L400 300 L540 370 L690 320 L820 365 L900 340 L900 460 L0 460Z" fill="#0c2b45"/>
+    <use href="#turbine" x="590" y="112" width="60" height="150"/>
+    <use href="#turbine" x="705" y="150" width="46" height="115"/>
+    <use href="#turbine" x="775" y="180" width="34" height="86"/>
+    <g transform="translate(420 372) skewX(-28)">
+      <rect x="0" y="0" width="132" height="58" rx="3" fill="url(#panelGrad)"/>
+      <rect x="0" y="0" width="132" height="58" rx="3" fill="url(#panelGrid)"/>
+      <rect x="142" y="0" width="132" height="58" rx="3" fill="url(#panelGrad)"/>
+      <rect x="142" y="0" width="132" height="58" rx="3" fill="url(#panelGrid)"/>
+      <rect x="284" y="0" width="132" height="58" rx="3" fill="url(#panelGrad)"/>
+      <rect x="284" y="0" width="132" height="58" rx="3" fill="url(#panelGrid)"/>
+    </g>
+    <rect x="0" y="425" width="900" height="35" fill="#081d31"/>
+  </svg>
+
+  <header class="topbar">
+    <a class="brand" href="#home">
+      <svg class="brand-leaf"><use href="#i-leaf"/></svg>
+      <div>
+        <strong>RE-SIZER</strong>
+        <span>Renewable Energy Sizing Tool</span>
+      </div>
+    </a>
+
+    <nav class="nav">
+      <a href="#home" class="active" data-i18n="nav.home"></a>
+      <a href="#analysis" data-i18n="nav.analysis"></a>
+      <a href="#results" data-i18n="nav.results"></a>
+      <a href="#about" data-i18n="nav.about"></a>
+      <a href="#help" data-i18n="nav.help"></a>
+    </nav>
+
+    <div class="topbar-actions">
+      <button id="themeBtn" class="theme-btn" type="button" aria-label="theme">
+        <svg class="i-moon"><use href="#i-moon"/></svg>
+        <svg class="i-sunicon"><use href="#i-sun"/></svg>
+      </button>
+      <button id="langBtn" class="lang-btn" type="button" data-i18n="lang.switch"></button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>
+      <span data-i18n="hero.title1"></span>
+      <span class="accent" data-i18n="hero.title2"></span>
+    </h1>
+    <p data-i18n="hero.text"></p>
+
+    <div class="chips">
+      <div class="chip">
+        <svg><use href="#i-globe"/></svg>
+        <div><b data-i18n="chip.data.t"></b><span data-i18n="chip.data.s"></span></div>
+      </div>
+      <div class="chip">
+        <svg><use href="#i-chip"/></svg>
+        <div><b data-i18n="chip.pso.t"></b><span data-i18n="chip.pso.s"></span></div>
+      </div>
+      <div class="chip">
+        <svg><use href="#i-layers"/></svg>
+        <div><b data-i18n="chip.scen.t"></b><span data-i18n="chip.scen.s"></span></div>
+      </div>
+      <div class="chip">
+        <svg><use href="#i-globe"/></svg>
+        <div><b data-i18n="chip.global.t"></b><span data-i18n="chip.global.s"></span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+
+<main class="container">
+
+  <!-- ===================================================== -->
+  <!-- CONTROLS: location | consumption | preferences        -->
+  <!-- ===================================================== -->
+  <section id="analysis" class="control-card">
+    <div class="control-grid">
+
+      <!-- 1) LOCATION -->
+      <div class="col col-loc">
+        <div class="col-title">
+          <span class="step">1</span>
+          <h2 data-i18n="step.location"></h2>
+        </div>
+
+        <div class="search-box">
+          <svg><use href="#i-search"/></svg>
+          <input id="placeSearch" type="search" autocomplete="off"
+                 data-i18n-placeholder="loc.search">
+        </div>
+        <p id="searchStatus" class="hint search-status"></p>
+
+        <div id="map"></div>
+
+        <div class="location-box">
+          <div>
+            <span data-i18n="loc.lat"></span>
+            <b id="latText">--</b>
+          </div>
+          <div>
+            <span data-i18n="loc.lon"></span>
+            <b id="lonText">--</b>
+          </div>
+          <div>
+            <span data-i18n="loc.elev"></span>
+            <b id="elevText">--</b>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- 2) CONSUMPTION -->
+      <div class="col col-cons">
+        <div class="col-title">
+          <span class="step">2</span>
+          <h2 data-i18n="step.consumption"></h2>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true"
+                  data-mode="monthly" type="button" data-i18n="tab.monthly"></button>
+          <button class="tab" role="tab" aria-selected="false"
+                  data-mode="file" type="button" data-i18n="tab.file"></button>
+        </div>
+
+        <!-- Monthly mode: 12 boxes -->
+        <div id="monthlyFields" class="field-group">
+
+          <p class="hint cons-hint" data-i18n="cons.file_or_months"></p>
+
+          <div class="month-grid">
+            <div class="month-cell">
+              <label for="month1" data-i18n="month.1"></label>
+              <input id="month1" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month2" data-i18n="month.2"></label>
+              <input id="month2" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month3" data-i18n="month.3"></label>
+              <input id="month3" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month4" data-i18n="month.4"></label>
+              <input id="month4" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month5" data-i18n="month.5"></label>
+              <input id="month5" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month6" data-i18n="month.6"></label>
+              <input id="month6" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month7" data-i18n="month.7"></label>
+              <input id="month7" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month8" data-i18n="month.8"></label>
+              <input id="month8" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month9" data-i18n="month.9"></label>
+              <input id="month9" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month10" data-i18n="month.10"></label>
+              <input id="month10" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month11" data-i18n="month.11"></label>
+              <input id="month11" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="month-cell">
+              <label for="month12" data-i18n="month.12"></label>
+              <input id="month12" data-month type="number" min="0" step="any" inputmode="decimal">
+            </div>
+          </div>
+
+          <div class="fill-row">
+            <label for="fillValue" data-i18n="fill.label"></label>
+            <div class="fill-controls">
+              <input id="fillValue" type="number" min="0" step="any" inputmode="decimal">
+              <button id="fillBtn" class="ghost-btn" type="button" data-i18n="fill.button"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- File mode: hourly file -->
+        <div id="fileFields" class="field-group hidden">
+          <label for="hourlyFile" data-i18n="file.label"></label>
+          <input id="hourlyFile" type="file" accept=".csv,.txt,text/csv,text/plain">
+          <p id="fileStatus" class="hint" data-i18n="file.none"></p>
+          <div class="notice" data-i18n="file.hint"></div>
+        </div>
+      </div>
+
+
+      <!-- 3) PREFERENCES -->
+      <div class="col col-prefs">
+        <div class="col-title">
+          <span class="step">3</span>
+          <h2 data-i18n="step.prefs"></h2>
+        </div>
+
+        <div class="field-group">
+          <div class="slider-head">
+            <label for="targetRenewable" data-i18n="target.label"></label>
+            <output id="targetValue" for="targetRenewable">{{ default_target_pct }}%</output>
+          </div>
+          <input id="targetRenewable" class="slider" type="range" min="10" max="100"
+                 step="1" value="{{ default_target_pct }}">
+          <small class="hint" data-i18n="target.hint"></small>
+        </div>
+
+        <div class="field-group">
+          <label for="pvFactor" data-i18n="pv.factor.label"></label>
+          <input id="pvFactor" type="number" min="0.3" max="1" step="0.01"
+                 value="{{ default_pv_factor }}">
+          <small class="hint" data-i18n="pv.factor.hint"></small>
+        </div>
+
+        <div class="field-group">
+          <label for="batteryEff" data-i18n="batt.eff.label"></label>
+          <input id="batteryEff" type="number" min="0.5" max="1" step="0.01"
+                 value="{{ default_battery_eff }}">
+          <small class="hint" data-i18n="batt.eff.hint"></small>
+        </div>
+
+        <details class="advanced">
+          <summary data-i18n="adv.title"></summary>
+
+          <div class="field-group">
+            <label for="elevation" data-i18n="adv.elev.label"></label>
+            <input id="elevation" type="number" min="-430" max="8850" step="1"
+                   inputmode="decimal">
+            <small class="hint" data-i18n="adv.elev.hint"></small>
+          </div>
+
+          <div class="field-group">
+            <label for="year" data-i18n="adv.year.label"></label>
+            <input id="year" type="number" min="{{ first_year }}"
+                   max="{{ last_year }}" value="{{ default_year }}">
+          </div>
+        </details>
+      </div>
+
+
+      <!-- RUN -->
+      <div class="run-row">
+        <button id="runBtn" class="primary-btn" type="button">
+          <svg><use href="#i-play"/></svg>
+          <span data-i18n="run"></span>
+        </button>
+        <p id="error" class="error hidden" role="alert"></p>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ===================================================== -->
+  <!-- LOADING                                               -->
+  <!-- ===================================================== -->
+  <section id="loading" class="panel loading hidden" aria-live="polite">
+    <div class="loader"></div>
+    <div>
+      <h2 data-i18n="loading.title"></h2>
+      <p data-i18n="loading.text"></p>
+    </div>
+  </section>
+
+
+  <!-- ===================================================== -->
+  <!-- RESULTS                                               -->
+  <!-- ===================================================== -->
+  <section id="results" class="hidden" data-tab="overview">
+
+    <div class="section-head">
+      <div>
+        <h2 data-i18n="res.title"></h2>
+        <p data-i18n="res.hint"></p>
+      </div>
+    </div>
+
+    <div id="resultTabs" class="result-tabs" role="tablist">
+      <button class="rtab active" data-tab="overview" type="button" data-i18n="tab.overview"></button>
+      <button class="rtab" data-tab="solar_battery" type="button" data-i18n="tab.solar_battery"></button>
+      <button class="rtab" data-tab="wind_battery" type="button" data-i18n="tab.wind_battery"></button>
+      <button class="rtab" data-tab="hybrid" type="button" data-i18n="tab.hybrid"></button>
+    </div>
+
+    <!-- Overview: site climate + the three scenarios side by side -->
+    <div class="only-overview">
+      <h3 class="mini-title" data-i18n="climate.title"></h3>
+      <div class="climate-grid">
+        <div class="climate-tile tile--sun">
+          <svg><use href="#i-sun"/></svg>
+          <span data-i18n="climate.solar"></span>
+          <b data-bind="weather.average_solar" data-fmt="wm2">--</b>
+        </div>
+        <div class="climate-tile tile--wind">
+          <svg><use href="#i-wind"/></svg>
+          <span data-i18n="climate.wind"></span>
+          <b data-bind="weather.average_wind_mps" data-fmt="mps">--</b>
+        </div>
+        <div class="climate-tile tile--temp" data-hide-if-null="weather.average_temp_c">
+          <svg><use href="#i-thermo"/></svg>
+          <span data-i18n="climate.temp"></span>
+          <b data-bind="weather.average_temp_c" data-fmt="c">--</b>
+        </div>
+        <div class="climate-tile tile--elev">
+          <svg><use href="#i-mountain"/></svg>
+          <span data-i18n="climate.elev"></span>
+          <b data-bind="weather.elevation_m" data-fmt="m">--</b>
+        </div>
+      </div>
+    </div>
+
+    <div id="scenarioGrid" class="scenario-grid only-overview"></div>
+
+    <!-- Details of one scenario -->
+    <div class="only-details">
+
+      <div class="section-head details-head">
+        <h2 id="detailsTitle"></h2>
+        <div class="system-pill" data-bind="recommended.system_type">--</div>
+      </div>
+
+      <div id="limitNotice" class="notice limit-notice hidden"></div>
+
+      <div class="kpi-grid">
+
+        <article class="kpi kpi--pv" data-count-path="recommended.pv_panels">
+          <header>
+            <span class="kpi-icon"><svg><use href="#i-sun"/></svg></span>
+            <span class="kpi-label" data-i18n="kpi.pv"></span>
+          </header>
+          <strong data-bind="recommended.pv_panels" data-fmt="int">--</strong>
+          <small data-bind="recommended.pv_kw" data-fmt="kw">--</small>
+          <dl class="kpi-details">
+            <div><dt data-i18n="kpi.type"></dt><dd data-bind="recommended.pv_type">--</dd></div>
+            <div><dt data-i18n="kpi.panel_w"></dt><dd data-bind="recommended.pv_panel_w" data-fmt="w">--</dd></div>
+            <div><dt data-i18n="kpi.price_panel"></dt><dd data-bind="assumptions.pv_price_sar" data-fmt="sar">--</dd></div>
+          </dl>
+          <p class="kpi-off-note hidden" data-i18n="kpi.unused"></p>
+        </article>
+
+        <article class="kpi kpi--wind" data-count-path="recommended.wind_turbines">
+          <header>
+            <span class="kpi-icon"><svg><use href="#i-wind"/></svg></span>
+            <span class="kpi-label" data-i18n="kpi.wind"></span>
+          </header>
+          <strong data-bind="recommended.wind_turbines" data-fmt="int">--</strong>
+          <small data-bind="recommended.wind_kw" data-fmt="kw">--</small>
+          <dl class="kpi-details">
+            <div><dt data-i18n="kpi.type"></dt><dd data-bind="recommended.wind_type">--</dd></div>
+            <div><dt data-i18n="kpi.turbine_kw"></dt><dd data-bind="recommended.wind_turbine_kw" data-fmt="kw">--</dd></div>
+            <div><dt data-i18n="kpi.hub"></dt><dd data-bind="recommended.wind_hub_height_m" data-fmt="m">--</dd></div>
+            <div><dt data-i18n="kpi.price_turbine"></dt><dd data-bind="assumptions.wind_price_sar" data-fmt="sar">--</dd></div>
+          </dl>
+          <p class="kpi-off-note hidden" data-i18n="kpi.unused"></p>
+        </article>
+
+        <article class="kpi kpi--battery" data-count-path="recommended.battery_units">
+          <header>
+            <span class="kpi-icon"><svg><use href="#i-battery"/></svg></span>
+            <span class="kpi-label" data-i18n="kpi.battery"></span>
+          </header>
+          <strong data-bind="recommended.battery_units" data-fmt="int">--</strong>
+          <small data-bind="recommended.battery_kwh" data-fmt="kwh">--</small>
+          <dl class="kpi-details">
+            <div><dt data-i18n="kpi.type"></dt><dd data-bind="recommended.battery_type">--</dd></div>
+            <div><dt data-i18n="kpi.unit_kwh"></dt><dd data-bind="recommended.battery_unit_kwh" data-fmt="kwh">--</dd></div>
+            <div><dt data-i18n="kpi.price_unit"></dt><dd data-bind="assumptions.battery_price_sar" data-fmt="sar">--</dd></div>
+          </dl>
+          <p class="kpi-off-note hidden" data-i18n="kpi.unused"></p>
+        </article>
+
+        <article class="kpi kpi--coverage">
+          <header>
+            <span class="kpi-icon"><svg><use href="#i-bolt"/></svg></span>
+            <span class="kpi-label" data-i18n="kpi.coverage"></span>
+          </header>
+          <strong data-bind="performance.renewable_fraction_pct" data-fmt="pct">--</strong>
+          <small data-i18n="kpi.of_demand"></small>
+          <dl class="kpi-details">
+            <div><dt data-i18n="kpi.target"></dt><dd data-bind="target.renewable_fraction_pct" data-fmt="pct">--</dd></div>
+            <div><dt data-i18n="kpi.status"></dt><dd id="targetStatus">--</dd></div>
+          </dl>
+        </article>
+
+      </div>
+
+      <div class="grid-2">
+
+        <article class="panel">
+          <h2 data-i18n="cost.title"></h2>
+
+          <div class="highlight">
+            <span data-i18n="cost.capex"></span>
+            <b data-bind="economics.capital_cost_sar" data-fmt="sar">--</b>
+          </div>
+
+          <dl class="stat-list">
+            <div><dt data-i18n="cost.grid_kwh"></dt><dd><span data-bind="economics.annual_grid_energy_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="cost.generated"></dt><dd><span data-bind="performance.renewable_generated_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="cost.served"></dt><dd><span data-bind="performance.renewable_served_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="cost.curtailed"></dt><dd><span data-bind="economics.curtailed_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="cost.export"></dt><dd><span data-bind="economics.export_revenue_sar" data-fmt="sar">--</span></dd></div>
+            <div><dt data-i18n="cost.unserved"></dt><dd><span data-bind="economics.annual_unserved_kwh" data-fmt="kwh">--</span></dd></div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <h2 data-i18n="site.title"></h2>
+
+          <dl class="stat-list">
+            <div><dt data-i18n="site.hours"></dt><dd><span data-bind="weather.valid_hours" data-fmt="int">--</span></dd></div>
+            <div><dt data-i18n="site.year"></dt><dd><span data-bind="weather.year">--</span></dd></div>
+            <div><dt data-i18n="site.elev"></dt><dd><span data-bind="weather.elevation_m" data-fmt="m">--</span> <small id="elevationSource" class="src"></small></dd></div>
+            <div><dt data-i18n="site.solar"></dt><dd><span data-bind="weather.average_solar" data-fmt="wm2">--</span></dd></div>
+            <div data-hide-if-null="weather.average_temp_c"><dt data-i18n="site.temp"></dt><dd><span data-bind="weather.average_temp_c" data-fmt="c">--</span></dd></div>
+            <div data-hide-if-null="weather.average_temp_c"><dt data-i18n="site.temp_corr"></dt><dd><span data-bind="weather.temperature_correction_c" data-fmt="c">--</span></dd></div>
+            <div><dt data-i18n="site.wind10"></dt><dd><span data-bind="weather.average_wind_mps" data-fmt="mps">--</span></dd></div>
+            <div><dt data-i18n="site.wind_hub"></dt><dd><span data-bind="weather.average_wind_hub_mps" data-fmt="mps">--</span></dd></div>
+            <div><dt data-i18n="site.shear"></dt><dd><span data-bind="weather.wind_shear_exponent" data-fmt="num3">--</span> <small id="shearSource" class="src"></small></dd></div>
+            <div><dt data-i18n="site.rho"></dt><dd><span data-bind="weather.air_density_kg_m3" data-fmt="rho">--</span></dd></div>
+            <div><dt data-i18n="site.load_avg"></dt><dd><span data-bind="load.average_kw" data-fmt="kw">--</span></dd></div>
+            <div><dt data-i18n="site.load_month"></dt><dd><span data-bind="load.monthly_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="site.load_year"></dt><dd><span data-bind="load.annual_kwh" data-fmt="kwh">--</span></dd></div>
+            <div><dt data-i18n="site.method"></dt><dd id="loadMethod">--</dd></div>
+          </dl>
+        </article>
+
+      </div>
+
+      <article class="panel">
+        <h2 data-i18n="cost.explain.title"></h2>
+
+        <div class="table-wrap">
+          <table id="costTable" class="cost-table"></table>
+        </div>
+        <p class="hint cost-note" data-i18n="cost.note"></p>
+
+        <p class="hint cost-note" data-i18n="cost.explain.1"></p>
+      </article>
+
+      <article class="panel">
+        <h2 data-i18n="cmp.title"></h2>
+        <dl class="stat-list">
+          <div><dt><span data-i18n="cmp.pv"></span> (<span data-bind="comparison.pv.type">--</span>)</dt><dd data-bind="comparison.pv.sar_per_kwh" data-fmt="sarkwh">--</dd></div>
+          <div><dt><span data-i18n="cmp.wind"></span> (<span data-bind="comparison.wind.type">--</span>)</dt><dd data-bind="comparison.wind.sar_per_kwh" data-fmt="sarkwh">--</dd></div>
+        </dl>
+        <p id="comparisonNote" class="hint"></p>
+      </article>
+
+    </div>
+
+
+    <!-- Charts (always shown, for the recommended or the chosen scenario) -->
+    <div class="grid-charts">
+
+      <article class="panel">
+        <h2 id="monthlyTitle"></h2>
+        <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
+      </article>
+
+      <article class="panel">
+        <h2 data-i18n="chart.mix.title"></h2>
+        <p class="chart-note" data-i18n="chart.mix.desc"></p>
+        <div class="chart-box"><canvas id="mixChart"></canvas></div>
+      </article>
+
+    </div>
+
+    <article class="panel">
+      <div class="chart-head">
+        <div>
+          <h2 data-i18n="chart.day.title"></h2>
+          <p id="chartDesc"></p>
+        </div>
+        <div class="period-box">
+          <label for="periodSelect" data-i18n="chart.period"></label>
+          <select id="periodSelect"></select>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="energyChart"></canvas></div>
+    </article>
+
+
+    <div class="panel notice">
+      <strong data-i18n="notice.grid.title"></strong>
+      <span data-i18n="notice.grid.text"></span>
+    </div>
+
+    <div class="panel notice">
+      <strong data-i18n="notice.eng.title"></strong>
+      <span data-i18n="notice.eng.text"></span>
+    </div>
+
+  </section>
+
+
+  <!-- ===================================================== -->
+  <!-- ABOUT + HELP                                          -->
+  <!-- ===================================================== -->
+  <section id="about" class="info-grid">
+    <article class="panel">
+      <h2 data-i18n="about.title"></h2>
+      <p data-i18n="about.text"></p>
+    </article>
+
+    <article id="help" class="panel">
+      <h2 data-i18n="help.title"></h2>
+      <details class="faq"><summary data-i18n="help.q1"></summary><p data-i18n="help.a1"></p></details>
+      <details class="faq"><summary data-i18n="help.q2"></summary><p data-i18n="help.a2"></p></details>
+      <details class="faq"><summary data-i18n="help.q3"></summary><p data-i18n="help.a3"></p></details>
+      <details class="faq"><summary data-i18n="help.q4"></summary><p data-i18n="help.a4"></p></details>
+    </article>
+  </section>
+
+</main>
+
+
+<!-- Feature band -->
+<section class="band">
+  <div class="band-inner">
+    <div class="band-item"><svg><use href="#i-globe"/></svg><div><b data-i18n="band.1.t"></b><span data-i18n="band.1.s"></span></div></div>
+    <div class="band-item"><svg><use href="#i-sun"/></svg><div><b data-i18n="band.2.t"></b><span data-i18n="band.2.s"></span></div></div>
+    <div class="band-item"><svg><use href="#i-chip"/></svg><div><b data-i18n="band.3.t"></b><span data-i18n="band.3.s"></span></div></div>
+    <div class="band-item"><svg><use href="#i-leaf"/></svg><div><b data-i18n="band.4.t"></b><span data-i18n="band.4.s"></span></div></div>
+  </div>
+</section>
+
+<footer>
+  <div><span data-i18n="footer.left"></span> • v{{ version }}</div>
+  <div data-i18n="footer.credits"></div>
+</footer>
+
+
+<script type="module"
+        src="{{ url_for('static', filename='js/main.js') }}?v={{ version }}"></script>
+
+</body>
+</html>
