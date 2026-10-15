@@ -1,0 +1,31 @@
+name: fetch-nasa-data
+on:
+  push:
+    branches: [data/nasa-2025-abha]
+    paths: [.github/workflows/fetch-nasa.yml]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests
+      - run: |
+          python - <<'PY'
+          import json
+          from nasa_power import get_nasa_hourly
+          from elevation import get_elevation
+          w = get_nasa_hourly(18.2122, 42.5358, 2025)
+          w["dem_elevation_m"] = get_elevation(18.2122, 42.5358)
+          json.dump(w, open("nasa_abha_2025.json", "w"))
+          print(len(w["solar_irradiance"]), w.get("elevation_m"), w["dem_elevation_m"])
+          PY
+      - run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add nasa_abha_2025.json
+          git commit -m "NASA POWER 2025 hourly data for Abha (temporary)"
+          git push
