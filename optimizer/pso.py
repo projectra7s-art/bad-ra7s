@@ -77,7 +77,7 @@ def refine_solution(start_x, site, target, bounds):
     """Local search around the PSO solution (two passes).
 
     1) (PV, wind) are tried together, battery fixed;
-    2) the battery quantity is adjusted.
+    2) (PV, battery) are tried together, wind fixed.
     """
     best_x = start_x[:]
     best_score = _score(best_x, site, target)
@@ -94,13 +94,16 @@ def refine_solution(start_x, site, target, bounds):
                 if score < best_score:
                     best_x, best_score, changed = candidate, score, True
 
-        for battery in _window(best_x[2], LOCAL_BATTERY_RADIUS, bounds[2]):
-            candidate = [best_x[0], best_x[1], battery]
-            if candidate == best_x:
-                continue
-            score = _score(candidate, site, target)
-            if score < best_score:
-                best_x, best_score, changed = candidate, score, True
+        # battery and PV together: one more battery often allows a few
+        # panels less for the same renewable share (the "valley" of the cost)
+        for pv in _window(best_x[0], LOCAL_PV_RADIUS, bounds[0]):
+            for battery in _window(best_x[2], LOCAL_BATTERY_RADIUS, bounds[2]):
+                candidate = [pv, best_x[1], battery]
+                if candidate == best_x:
+                    continue
+                score = _score(candidate, site, target)
+                if score < best_score:
+                    best_x, best_score, changed = candidate, score, True
 
         if not changed:
             break
