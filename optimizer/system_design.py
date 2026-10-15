@@ -3,8 +3,10 @@
 These values do not change the hourly energy balance; they size the power
 equipment around the PV / wind / battery quantities chosen by PSO.
 
-Inverter (hybrid)
+Inverter
     required = max( safety_factor x peak load ,  generator kW / max DC/AC ratio )
+    (the load term only when there is a battery: without one, a grid-tie
+    inverter converts the generator power only and the grid feeds the house)
     rounded UP to a standard size; above the largest standard size identical
     units are put in parallel.
 
@@ -45,7 +47,12 @@ def size_inverter(design) -> dict:
             "by_load_kw": 0.0, "by_generator_kw": 0.0, "dc_ac_ratio": None,
         }
 
-    by_load = SYSTEM["inverter_safety_factor"] * peak
+    # A hybrid inverter with a battery must be able to supply the whole house
+    # from the battery (the dispatch lets the battery cover any deficit). A
+    # grid-tie inverter without a battery only converts what the generators
+    # produce; the grid feeds the house directly, so the load does not size it.
+    with_battery = design.get("battery_count", 0) > 0
+    by_load = SYSTEM["inverter_safety_factor"] * peak if with_battery else 0.0
     by_generator = gen_kw / SYSTEM["inverter_max_dc_ac_ratio"]
     required = max(by_load, by_generator)
 

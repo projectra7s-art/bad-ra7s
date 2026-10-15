@@ -221,7 +221,9 @@ design. For a final academic or engineering version, improve:
   the target. The yearly numbers stay in the API response (`economics`, `costs`).
 - Wind turbine prices are about 1,500 SAR per kW (turbine only).
 - The inverter is **sized for every design** (`optimizer/system_design.py`):
-  `P_inv = max(1.25 x peak hourly load, (PV kW + wind kW) / 1.25)`, rounded up
+  `P_inv = max(1.25 x peak hourly load, (PV kW + wind kW) / 1.25)` (the load
+  term only when the design has a battery; a grid-tie inverter without one only
+  converts the generator power), rounded up
   to a standard size (1 ... 12 kW); larger systems use identical units in
   parallel. Cost = rated kW x `inverter_cost_sar_per_kw` (700 SAR/kW).
 

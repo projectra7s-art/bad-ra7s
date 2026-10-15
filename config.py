@@ -194,7 +194,8 @@ SELECTED = {
 SYSTEM = {
     # Inverter (hybrid: PV + battery + grid). It is SIZED for every design
     # (see optimizer/system_design.py):
-    #   P_inv >= safety_factor x peak hourly load
+    #   P_inv >= safety_factor x peak hourly load   (only with a battery: the
+    #            battery must be able to supply the whole house)
     #   P_inv >= (PV kW + wind kW) / max_dc_ac_ratio
     # then rounded UP to a standard size. Above the largest single unit,
     # identical units are connected in parallel.
