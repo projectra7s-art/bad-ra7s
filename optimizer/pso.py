@@ -36,10 +36,11 @@ TRIM_WIND_RADIUS = 2
 TRIM_BATTERY_RADIUS = 2
 
 # id, label, restriction of the search space
+# Every scenario includes a battery (at least one unit), as the department requires.
 SCENARIOS = (
-    ("solar_battery", "Solar + Battery", {"wind_max": 0}),
-    ("wind_battery", "Wind + Battery", {"pv_max": 0}),
-    ("hybrid", "Hybrid (PV + Wind + Battery)", {"pv_min": 1, "wind_min": 1}),
+    ("solar_battery", "Solar + Battery", {"wind_max": 0, "pv_min": 1, "battery_min": 1}),
+    ("wind_battery", "Wind + Battery", {"pv_max": 0, "wind_min": 1, "battery_min": 1}),
+    ("hybrid", "Hybrid (PV + Wind + Battery)", {"pv_min": 1, "wind_min": 1, "battery_min": 1}),
 )
 
 def search_bounds(rule=None):
@@ -55,7 +56,7 @@ def search_bounds(rule=None):
     return [
         (rule.get("pv_min", 0), pv_max),
         (rule.get("wind_min", 0), wind_max),
-        (0, SYSTEM["max_batteries"]),
+        (rule.get("battery_min", 0), SYSTEM["max_batteries"]),
     ]
 
 
