@@ -181,6 +181,7 @@ design. For a final academic or engineering version, improve:
       simulation.py           hourly dispatch, cost and objective of one candidate
       pso.py                  PSO + local refinement (one search per scenario)
       report.py               builds the result dict shown in the UI
+      system_design.py        inverter size, DC bus voltage, battery bank, currents
 
     templates/index.html      Arabic/RTL page (data-bind attributes fill the numbers)
     static/style.css          styling (sections: tokens, layout, panels, form, results, responsive)
@@ -190,6 +191,7 @@ design. For a final academic or engineering version, improve:
       form.js                 input tabs + validation
       api.js                  fetch /api/analyze
       results.js              fills the results from the response (data-bind)
+      diagram.js              SVG block diagram of the chosen system
       charts.js               Chart.js charts
       i18n.js                 Arabic / English texts (add new sentences to both)
       format.js, ui.js        small helpers
@@ -218,7 +220,26 @@ design. For a final academic or engineering version, improve:
   The recommended scenario is the one with the lowest yearly cost that reaches
   the target. The yearly numbers stay in the API response (`economics`, `costs`).
 - Wind turbine prices are about 1,500 SAR per kW (turbine only).
-- The inverter is a fixed price unless `inverter_cost_sar_per_kw` is set.
+- The inverter is **sized for every design** (`optimizer/system_design.py`):
+  `P_inv = max(1.25 x peak hourly load, (PV kW + wind kW) / 1.25)`, rounded up
+  to a standard size (1 ... 12 kW); larger systems use identical units in
+  parallel. Cost = rated kW x `inverter_cost_sar_per_kw` (700 SAR/kW).
+
+
+## Electrical design (DC bus, battery C-rate, block diagram)
+
+- **Battery C-rate** (`BATTERY_OPTIONS`, LiFePO4, 0.5C): in every hour the
+  bank cannot charge or discharge more than `C-rate x nominal kWh`. Surplus
+  above the limit is exported / curtailed, deficit above it comes from the grid.
+- **DC bus voltage** (`DC_BUS` in `config.py`): chosen from the inverter
+  power: up to 1.5 kW -> 12 V, up to 3 kW -> 24 V, above -> 48 V.
+- **Battery bank**: cells in series = V_bus / 3 (16 cells x 3.2 V = 51.2 V at
+  48 V); the batteries chosen by PSO are connected in parallel; Ah = kWh x 1000 / V.
+- **Currents** use I = P / V (MPPT output, wind controller output, each inverter,
+  battery at its C-rate limit).
+- The results page draws a **block diagram** of the chosen scenario
+  (`static/js/diagram.js`): PV -> MPPT, wind -> controller, battery bank, DC bus,
+  hybrid inverter, house loads and grid, with sizes and currents.
 - The optimizer picks the design with the lowest yearly cost that reaches the
   target; among designs within `size_tolerance` (1%) of it, the smallest system
   wins, so the result stays close to the requested target.

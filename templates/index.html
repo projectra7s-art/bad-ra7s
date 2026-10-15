@@ -548,6 +548,47 @@
         <p class="hint cost-note" data-i18n="cost.explain.1"></p>
       </article>
 
+      <!-- Electrical design: DC bus, inverter, battery bank + block diagram -->
+      <article class="panel design-panel">
+        <h2 data-i18n="design.title"></h2>
+        <p class="hint" data-i18n="design.desc"></p>
+
+        <div class="design-grid">
+          <div id="blockDiagram" class="block-diagram" role="img"></div>
+
+          <div class="design-stats">
+            <h3 data-i18n="design.bus.title"></h3>
+            <dl class="stat-list">
+              <div><dt data-i18n="design.bus.v"></dt><dd data-bind="system_design.dc_bus_v" data-fmt="volt">--</dd></div>
+              <div><dt data-i18n="design.bus.rule"></dt><dd dir="ltr" data-i18n="design.bus.rule.value"></dd></div>
+              <div><dt data-i18n="design.bus.i_inv"></dt><dd data-bind="system_design.currents.inverter_dc_a" data-fmt="amp">--</dd></div>
+            </dl>
+
+            <h3 data-i18n="design.inv.title"></h3>
+            <dl class="stat-list">
+              <div><dt data-i18n="design.inv.peak"></dt><dd data-bind="system_design.peak_load_kw" data-fmt="kw">--</dd></div>
+              <div><dt data-i18n="design.inv.by_load"></dt><dd data-bind="system_design.inverter.by_load_kw" data-fmt="kw">--</dd></div>
+              <div><dt data-i18n="design.inv.by_gen"></dt><dd data-bind="system_design.inverter.by_generator_kw" data-fmt="kw">--</dd></div>
+              <div><dt data-i18n="design.inv.chosen"></dt><dd id="inverterChosen">--</dd></div>
+              <div><dt data-i18n="design.inv.ratio"></dt><dd data-bind="system_design.inverter.dc_ac_ratio" data-fmt="num2">--</dd></div>
+            </dl>
+
+            <div data-hide-if-null="system_design.battery">
+              <h3 data-i18n="design.bat.title"></h3>
+              <dl class="stat-list">
+                <div><dt data-i18n="design.bat.chem"></dt><dd data-bind="system_design.battery.chemistry">--</dd></div>
+                <div><dt data-i18n="design.bat.pack"></dt><dd id="batteryPack">--</dd></div>
+                <div><dt data-i18n="design.bat.parallel"></dt><dd data-bind="system_design.battery.packs_parallel" data-fmt="int">--</dd></div>
+                <div><dt data-i18n="design.bat.ah"></dt><dd data-bind="system_design.battery.bank_ah" data-fmt="ah">--</dd></div>
+                <div><dt data-i18n="design.bat.crate"></dt><dd data-bind="system_design.battery.c_rate_charge" data-fmt="crate">--</dd></div>
+                <div><dt data-i18n="design.bat.pmax"></dt><dd id="batteryPower">--</dd></div>
+                <div><dt data-i18n="design.bat.limited"></dt><dd id="batteryLimited">--</dd></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </article>
+
       <article class="panel">
         <h2 data-i18n="cmp.title"></h2>
         <dl class="stat-list">

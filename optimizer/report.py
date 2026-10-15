@@ -3,6 +3,7 @@
 from config import SYSTEM
 
 from .economics import annual_cost_per_unit, cost_table
+from .system_design import system_design
 
 
 def system_type(pv_count, wind_count, battery_count):
@@ -139,6 +140,7 @@ def build_site_report(site, target_renewable_fraction, year):
             "annual_kwh": round(info["annual_load_kwh"], 1),
             "monthly_kwh": round(info["annual_load_kwh"] / 12.0, 1),
             "average_kw": round(average_kw, 2),
+            "peak_kw": round(site["peak_load_kw"], 2),
             "monthly_kwh_list": [
                 round(v, 1) for v in info["monthly_load_kwh"]
             ],
@@ -159,6 +161,10 @@ def build_site_report(site, target_renewable_fraction, year):
             "battery_kwh": battery["usable_kwh"],
             "battery_price_sar": battery["price_sar"],
             "battery_efficiency_pct": battery["round_trip_efficiency"] * 100.0,
+            "battery_chemistry": battery.get("chemistry", ""),
+            "battery_c_rate_charge": battery.get("max_charge_c_rate"),
+            "battery_c_rate_discharge": battery.get("max_discharge_c_rate"),
+            "inverter_price_per_kw_sar": SYSTEM["inverter_cost_sar_per_kw"],
             "target_renewable_pct": target_renewable_fraction * 100.0,
         },
 
@@ -298,6 +304,9 @@ def build_scenario_report(final, site, target_renewable_fraction):
         "costs": costs,
 
         "limits_hit": limits_hit,
+
+        # inverter size, DC bus voltage, battery bank, currents -> block diagram
+        "system_design": system_design(final),
 
         "monthly": {
             "solar_kwh": [round(v, 1) for v in solar_month],

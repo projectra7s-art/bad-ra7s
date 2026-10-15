@@ -1250,3 +1250,40 @@ footer {
   .footer-inner { display: block; }
   .footer-inner div + div { margin-top: 4px; }
 }
+
+
+/* ---------- 11. ELECTRICAL DESIGN / BLOCK DIAGRAM ---------- */
+
+.design-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 12px;
+}
+.design-stats h3 {
+  font-size: 15px;
+  margin: 14px 0 4px;
+  color: var(--accent-ink);
+}
+.design-stats h3:first-child { margin-top: 0; }
+
+.block-diagram {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px;
+}
+.bd-svg { display: block; width: 100%; height: auto; max-width: 560px; margin: 0 auto; }
+.bd-svg text { font-family: var(--font); text-anchor: middle; fill: var(--ink); }
+.bd-title { font-size: 17px; font-weight: 700; }
+.bd-line { font-size: 15.5px; fill: var(--muted) !important; font-variant-numeric: tabular-nums; }
+.bd-label { font-size: 15px; font-weight: 600; text-anchor: start !important; fill: var(--muted) !important; }
+.bd-center { text-anchor: middle !important; }
+.bd-bus { font-size: 16px; font-weight: 700; fill: var(--accent-ink) !important; }
+.bd-off { opacity: 0.35; }
+
+@media (max-width: 860px) {
+  .design-grid { grid-template-columns: 1fr; }
+  .block-diagram { padding: 4px; }
+}

@@ -19,7 +19,8 @@ from .economics import annualized_capital, capital_breakdown, total_capital
 # 1) Decode a particle into real equipment
 # ------------------------------------------------------------
 
-def decode_particle(x, components):
+def decode_particle(x, components, peak_load_kw=0.0):
+    """peak_load_kw (highest hourly load) is needed to size the inverter."""
     return {
         "pv_count": clamp_round(x[0], 0, SYSTEM["max_pv_panels"]),
         "wind_count": clamp_round(x[1], 0, SYSTEM["max_wind_turbines"]),
@@ -27,6 +28,7 @@ def decode_particle(x, components):
         "pv": components["pv"],
         "wind": components["wind"],
         "battery": components["battery"],
+        "peak_load_kw": peak_load_kw,
     }
 
 
@@ -54,6 +56,13 @@ def _run_dispatch(design, site, record_sample):
 
     # sqrt(round-trip efficiency) is applied on charge AND on discharge.
     sqrt_eff = math.sqrt(battery["round_trip_efficiency"])
+
+    # C-rate: maximum charge / discharge power of the whole bank (kW). With
+    # hourly steps, kW over one hour = kWh in that hour.
+    max_charge = battery_capacity * battery.get("max_charge_c_rate", 1.0)
+    max_discharge = battery_capacity * battery.get("max_discharge_c_rate", 1.0)
+    charge_limited_hours = 0
+    discharge_limited_hours = 0
 
     total_load = 0.0
     renewable_generated = 0.0
@@ -86,6 +95,9 @@ def _run_dispatch(design, site, record_sample):
         if battery_capacity > 0 and surplus > 0:
             available_capacity = battery_capacity - soc
             charge = min(surplus, max(0.0, available_capacity / sqrt_eff))
+            if charge > max_charge:
+                charge = max_charge
+                charge_limited_hours += 1
             soc = min(battery_capacity, soc + charge * sqrt_eff)
 
             renewable_to_battery += charge
@@ -98,6 +110,9 @@ def _run_dispatch(design, site, record_sample):
         if deficit > 0 and battery_capacity > 0:
             available = max(0.0, soc - min_soc)
             discharge = min(deficit, available * sqrt_eff)
+            if discharge > max_discharge:
+                discharge = max_discharge
+                discharge_limited_hours += 1
             soc = max(min_soc, soc - discharge / sqrt_eff)
 
             battery_to_load += discharge
@@ -128,6 +143,10 @@ def _run_dispatch(design, site, record_sample):
         "grid": grid,
         "curtailed": curtailed,
         "battery_capacity": battery_capacity,
+        "max_charge_kw": max_charge,
+        "max_discharge_kw": max_discharge,
+        "charge_limited_hours": charge_limited_hours,
+        "discharge_limited_hours": discharge_limited_hours,
         "sample": sample,
     }
 
@@ -213,7 +232,7 @@ def _objective(energy, annual_capital, target_fraction, renewable_served):
 
 def capital_of(x, site):
     """Capital cost of a decision vector (no simulation needed)."""
-    design = decode_particle(x, site["components"])
+    design = decode_particle(x, site["components"], site["peak_load_kw"])
     return total_capital(capital_breakdown(design))
 
 
@@ -232,7 +251,7 @@ def simulate(
     `site` comes from build_site(). `record_sample=False` skips the
     per-hour chart data (faster during the search); numbers are identical.
     """
-    design = decode_particle(x, site["components"])
+    design = decode_particle(x, site["components"], site["peak_load_kw"])
 
     energy = _run_dispatch(design, site, record_sample)
 
@@ -282,6 +301,11 @@ def simulate(
         "wind": design["wind"],
         "battery": design["battery"],
         "battery_nominal_kwh": energy["battery_capacity"],
+        "max_charge_kw": energy["max_charge_kw"],
+        "max_discharge_kw": energy["max_discharge_kw"],
+        "charge_limited_hours": energy["charge_limited_hours"],
+        "discharge_limited_hours": energy["discharge_limited_hours"],
+        "peak_load_kw": design["peak_load_kw"],
         "pv_count": design["pv_count"],
         "wind_count": design["wind_count"],
         "battery_count": design["battery_count"],

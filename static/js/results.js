@@ -7,6 +7,7 @@
 
 import { FORMATTERS, num } from "./format.js";
 import { renderDailyChart, renderMixChart, renderMonthlyChart } from "./charts.js";
+import { renderBlockDiagram } from "./diagram.js";
 import { t } from "./i18n.js";
 import { $, setText } from "./ui.js";
 
@@ -292,6 +293,30 @@ function renderCostBreakdown(scenario) {
   table.append(head, body, foot);
 }
 
+// Electrical design: values that combine several numbers in one cell
+function renderDesign(scenario) {
+  const design = scenario.system_design || {};
+  const inv = design.inverter;
+  const bat = design.battery;
+
+  setText("inverterChosen", inv && inv.units > 0
+    ? `\u200E${inv.units} × ${num(inv.unit_kw, 1)} kW = ${num(inv.rated_kw, 1)} kW`
+    : "--");
+
+  if (bat) {
+    setText("batteryPack",
+      `\u200E${bat.cells_series} × ${num(bat.cell_voltage_v, 1)} V = ${num(bat.pack_voltage_v, 1)} V`);
+    setText("batteryPower",
+      `\u200E${num(bat.max_charge_kw, 2)} kW (${num(bat.max_charge_a, 0)} A)`);
+    setText("batteryLimited", t("design.bat.limited.value", {
+      charge: num(bat.charge_limited_hours, 0),
+      discharge: num(bat.discharge_limited_hours, 0),
+    }));
+  }
+
+  renderBlockDiagram($("blockDiagram"), scenario);
+}
+
 function renderPeriodOptions() {
   const select = $("periodSelect");
   select.replaceChildren();
@@ -325,6 +350,7 @@ function renderDetails() {
   renderSources(view);
   renderComparison(view);
   renderCostBreakdown(scenario);
+  renderDesign(scenario);
 
   setText("detailsTitle", t("scn.details", { label: t(`scn.${scenario.id}`) }));
   setText(

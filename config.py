@@ -1,4 +1,4 @@
-APP_VERSION = "2.4.7"
+APP_VERSION = "2.5.0"
 
 # ------------------------------------------------------------
 # PV Catalogue
@@ -112,6 +112,13 @@ WIND_OPTIONS = [
 # maximum and the minimum state of charge). The nominal capacity is therefore
 #   nominal = usable_kwh / (1 - minimum_soc)
 # so that the SOC window [minimum_soc, 100%] delivers exactly usable_kwh.
+#
+# chemistry LiFePO4 (lithium iron phosphate): cell voltage 3.2 V.
+# C-rate = charge or discharge power as a fraction of the NOMINAL capacity:
+#   P_max (kW) = C-rate x nominal kWh       (0.5C -> full charge in 2 hours)
+# In every hour the battery cannot take or give more than this power; the
+# surplus above the limit is exported / curtailed and the deficit above the
+# limit is bought from the grid.
 
 BATTERY_OPTIONS = [
     {
@@ -121,6 +128,10 @@ BATTERY_OPTIONS = [
         "round_trip_efficiency": 0.90,
         "minimum_soc": 0.20,
         "initial_soc": 0.60,
+        "chemistry": "LiFePO4",
+        "cell_voltage_v": 3.2,
+        "max_charge_c_rate": 0.5,
+        "max_discharge_c_rate": 0.5,
     },
     {
         "id": "BAT10",
@@ -129,6 +140,10 @@ BATTERY_OPTIONS = [
         "round_trip_efficiency": 0.90,
         "minimum_soc": 0.20,
         "initial_soc": 0.60,
+        "chemistry": "LiFePO4",
+        "cell_voltage_v": 3.2,
+        "max_charge_c_rate": 0.5,
+        "max_discharge_c_rate": 0.5,
     },
     {
         "id": "BAT15",
@@ -137,6 +152,10 @@ BATTERY_OPTIONS = [
         "round_trip_efficiency": 0.90,
         "minimum_soc": 0.20,
         "initial_soc": 0.60,
+        "chemistry": "LiFePO4",
+        "cell_voltage_v": 3.2,
+        "max_charge_c_rate": 0.5,
+        "max_discharge_c_rate": 0.5,
     },
     {
         "id": "BAT20",
@@ -145,6 +164,10 @@ BATTERY_OPTIONS = [
         "round_trip_efficiency": 0.90,
         "minimum_soc": 0.20,
         "initial_soc": 0.60,
+        "chemistry": "LiFePO4",
+        "cell_voltage_v": 3.2,
+        "max_charge_c_rate": 0.5,
+        "max_discharge_c_rate": 0.5,
     },
 ]
 
@@ -169,12 +192,17 @@ SELECTED = {
 # ------------------------------------------------------------
 
 SYSTEM = {
-    # Inverter: fixed price, or (if the per-kW price below is > 0) the larger
-    # of the fixed price and  per_kw x (PV kW + wind kW).  A 20+ kW system needs
-    # a bigger inverter than a 3 kW one; a typical string inverter costs about
-    # 400 - 500 SAR per kW.
-    "inverter_cost_sar": 3500.0,
-    "inverter_cost_sar_per_kw": 0.0,
+    # Inverter (hybrid: PV + battery + grid). It is SIZED for every design
+    # (see optimizer/system_design.py):
+    #   P_inv >= safety_factor x peak hourly load
+    #   P_inv >= (PV kW + wind kW) / max_dc_ac_ratio
+    # then rounded UP to a standard size. Above the largest single unit,
+    # identical units are connected in parallel.
+    #   cost = number of units x unit size (kW) x price per kW
+    "inverter_cost_sar_per_kw": 700.0,
+    "inverter_safety_factor": 1.25,
+    "inverter_max_dc_ac_ratio": 1.25,
+    "inverter_standard_sizes_kw": [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0],
     "balance_of_system_cost_sar": 5000.0,
 
     # Maximum number of units of each selected technology
@@ -193,6 +221,24 @@ SYSTEM = {
     # small rooftop systems in this model, so the default is 0 (= surplus is
     # wasted). Put a positive value to reward exported energy.
     "feed_in_tariff_sar_per_kwh": 0.0,
+}
+
+
+# ------------------------------------------------------------
+# DC Bus Voltage
+# ------------------------------------------------------------
+# PV (through its MPPT charge controller), the wind turbine (through its
+# rectifier / controller), the battery bank and the inverter all meet on
+# one DC bus. Its nominal voltage is chosen from the inverter power:
+#   P <= 1.5 kW -> 12 V,   P <= 3 kW -> 24 V,   above -> 48 V
+# A higher voltage means a lower current (I = P / V), so thinner cables and
+# lower losses. The battery packs are built for the bus voltage:
+#   cells in series = V_bus / 3   (12 V -> 4, 24 V -> 8, 48 V -> 16 cells)
+#   pack voltage    = cells x 3.2 V  (12.8 / 25.6 / 51.2 V for LiFePO4)
+
+DC_BUS = {
+    "voltage_steps": [(1.5, 12), (3.0, 24)],   # (up to kW, volts)
+    "default_voltage_v": 48,
 }
 
 

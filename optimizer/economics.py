@@ -2,6 +2,8 @@
 
 from config import ECONOMICS, SYSTEM
 
+from .system_design import size_inverter
+
 
 def crf(rate: float, years: float) -> float:
     """Capital recovery factor: yearly payment per 1 SAR invested."""
@@ -12,20 +14,9 @@ def crf(rate: float, years: float) -> float:
 
 
 def inverter_cost(design) -> float:
-    """Inverter price: fixed, or sized on the generator power if configured."""
-    if design["pv_count"] + design["wind_count"] <= 0:
-        return 0.0
-
-    fixed = SYSTEM["inverter_cost_sar"]
-    per_kw = SYSTEM.get("inverter_cost_sar_per_kw", 0.0)
-    if per_kw <= 0:
-        return fixed
-
-    generator_kw = (
-        design["pv_count"] * design["pv"]["rated_w"] / 1000.0
-        + design["wind_count"] * design["wind"]["rated_kw"]
-    )
-    return max(fixed, per_kw * generator_kw)
+    """Price of the inverter(s) sized for this design (system_design.py)."""
+    inverter = size_inverter(design)
+    return inverter["rated_kw"] * SYSTEM["inverter_cost_sar_per_kw"]
 
 
 def capital_breakdown(design) -> dict:
@@ -84,12 +75,18 @@ def cost_table(design) -> dict:
     rate = ECONOMICS["discount_rate"]
     lifetimes = ECONOMICS["lifetime_years"]
     costs = capital_breakdown(design)
+    inverter = size_inverter(design)
 
     items = [
         ("pv", design["pv"]["id"], design["pv"]["price_sar"], design["pv_count"]),
         ("wind", design["wind"]["id"], design["wind"]["price_sar"], design["wind_count"]),
         ("battery", design["battery"]["id"], design["battery"]["price_sar"], design["battery_count"]),
-        ("inverter", "", costs["inverter"], 1 if costs["inverter"] > 0 else 0),
+        (
+            "inverter",
+            f"{inverter['unit_kw']:g} kW",
+            inverter["unit_kw"] * SYSTEM["inverter_cost_sar_per_kw"],
+            inverter["units"],
+        ),
         ("bos", "", costs["bos"], 1 if costs["bos"] > 0 else 0),
     ]
 

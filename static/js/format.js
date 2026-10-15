@@ -21,5 +21,10 @@ export const FORMATTERS = {
   c:    (v) => `${num(v, 1)} °C`,
   rho:  (v) => `${num(v, 3)} kg/m³`,
   num3: (v) => num(v, 3),
+  num2: (v) => num(v, 2),
+  volt: (v) => `${num(v, 1)} V`,
+  amp:  (v) => `${num(v, 0)} A`,
+  ah:   (v) => `${num(v, 0)} Ah`,
+  crate: (v) => `${num(v, 2)}C`,
   sarkwh: (v) => `${num(v, 3)} SAR/kWh`,
 };

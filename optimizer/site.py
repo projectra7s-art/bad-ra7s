@@ -153,6 +153,8 @@ def build_site(
         "months": months,
         "hours": hours,
         "components": components,
+        # highest hourly load (kWh in one hour = average kW of that hour)
+        "peak_load_kw": max(load) if load else 0.0,
         "info": {
             "load_type": load_spec["type"],
             "annual_load_kwh": sum(load),
