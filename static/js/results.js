@@ -93,7 +93,7 @@ function scenarioCard(scenario) {
   // total cost, large
   const cost = el("div", "scn-cost");
   const amount = el("b", "", num(eco.capital_cost_sar, 0) + " ");
-  amount.append(el("small", "", "SAR"));
+  amount.append(el("small", "", "\u20C1"));
   cost.append(el("span", "", t("scn.capex")), amount);
   card.append(cost);
 
@@ -159,7 +159,7 @@ function bindAll(view) {
     const raw = get(view, element.dataset.bind);
     const format = FORMATTERS[element.dataset.fmt || "text"];
 
-    // \u200E (left-to-right mark) keeps "59,550 SAR" in the right order
+    // \u200E (left-to-right mark) keeps "59,550 ⃁" in the right order
     // inside an RTL page.
     element.textContent =
       raw === undefined || raw === null ? "--" : "\u200E" + format(raw);
@@ -274,9 +274,9 @@ function renderCostBreakdown(scenario) {
     const tr = el("tr");
     tr.append(
       cell("td", name),
-      cell("td", `\u200E${num(item.unit_price_sar, 0)} SAR`),
+      cell("td", `\u200E${num(item.unit_price_sar, 0)} \u20C1`),
       cell("td", `\u200E${num(item.quantity, 0)}`),
-      cell("td", `\u200E${num(item.total_sar, 0)} SAR`),
+      cell("td", `\u200E${num(item.total_sar, 0)} \u20C1`),
     );
     body.append(tr);
   });
@@ -287,7 +287,7 @@ function renderCostBreakdown(scenario) {
     cell("td", t("cost.row.total")),
     cell("td", ""),
     cell("td", ""),
-    cell("td", `\u200E${num(costs.capital_total_sar, 0)} SAR`),
+    cell("td", `\u200E${num(costs.capital_total_sar, 0)} \u20C1`),
   );
   foot.append(footRow);
   table.append(head, body, foot);

@@ -10,13 +10,22 @@
              10 Responsive
    ===================================================================== */
 
+/* Saudi Riyal sign (U+20C1, official SAMA symbol). The font holds only this
+   character, so every other character still uses the fonts below. */
+@font-face {
+  font-family: "Saudi Riyal";
+  src: url("/static/fonts/saudi-riyal.woff") format("woff");
+  unicode-range: U+20C1;
+  font-display: block;
+}
+
 
 /* ---------- 1. TOKENS ---------- */
 
 /* Night mode = [data-theme="dark"] on <html> (see js/theme.js) */
 :root {
-  --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
-  --font-head: "Noto Kufi Arabic", "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  --font: "Saudi Riyal", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-head: "Saudi Riyal", "Noto Kufi Arabic", "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
 
   /* hero (same in both modes) */
   --night: #0d2238;

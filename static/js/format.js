@@ -13,7 +13,7 @@ export const FORMATTERS = {
   kw:   (v) => `${num(v, 2)} kW`,
   kwh:  (v) => `${num(v, 1)} kWh`,
   w:    (v) => `${num(v, 0)} W`,
-  sar:  (v) => `${num(v, 0)} SAR`,
+  sar:  (v) => `${num(v, 0)} \u20C1`,
   pct:  (v) => `${num(v, 1)}%`,
   mps:  (v) => `${num(v, 2)} m/s`,
   wm2:  (v) => `${num(v, 1)} W/m²`,
@@ -26,5 +26,5 @@ export const FORMATTERS = {
   amp:  (v) => `${num(v, 0)} A`,
   ah:   (v) => `${num(v, 0)} Ah`,
   crate: (v) => `${num(v, 2)}C`,
-  sarkwh: (v) => `${num(v, 3)} SAR/kWh`,
+  sarkwh: (v) => `${num(v, 3)} \u20C1/kWh`,
 };
